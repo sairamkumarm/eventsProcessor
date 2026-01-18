@@ -1,9 +1,7 @@
 package dev.factory.events.service;
 
 import dev.factory.events.AbstractIntegrationTest;
-import dev.factory.events.api.dto.EventBatchRequest;
-import dev.factory.events.api.dto.EventBatchResponse;
-import dev.factory.events.api.dto.EventIngestRequest;
+import dev.factory.events.api.dto.*;
 import dev.factory.events.domain.EventEntity;
 import dev.factory.events.repository.EventRepository;
 import dev.factory.events.testConfig.FixedClockTestConfig;
@@ -18,7 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Import(FixedClockTestConfig.class)
-public class DbBackedIngestionServiceIT extends AbstractIntegrationTest{
+class DbBackedNativeIngestionServiceIT extends AbstractIntegrationTest {
     @Autowired
     private EventIngestionService ingestionService;
 
@@ -36,24 +34,30 @@ public class DbBackedIngestionServiceIT extends AbstractIntegrationTest{
         e.setDefectCount(0);
         return e;
     }
+
+    @BeforeEach
+    void clean() {
+        eventRepository.deleteAll();
+        FixedClockTestConfig.reset();
+    }
+
     @Test
     void shouldInsertNewEvent() {
 
-        EventBatchRequest req = new EventBatchRequest();
-        req.setEvents(List.of(baseEvent("E-1")));
-
-        EventBatchResponse res = ingestionService.ingest(req);
+        EventBatchResponse res = ingestionService.ingest(
+                new EventBatchRequest(List.of(baseEvent("E-1")))
+        );
 
         assertThat(res.getAccepted()).isEqualTo(1);
         assertThat(res.getUpdated()).isZero();
         assertThat(res.getDeduped()).isZero();
         assertThat(res.getRejected()).isZero();
 
-        List<EventEntity> events =
+        List<EventEntity> stored =
                 eventRepository.findAllByEventIdIn(List.of("E-1"));
 
-        assertThat(events).hasSize(1);
-        assertThat(events.getFirst().getMachineId()).isEqualTo("M-001");
+        assertThat(stored).hasSize(1);
+        assertThat(stored.getFirst().getMachineId()).isEqualTo("M-001");
     }
 
     @Test
@@ -61,70 +65,70 @@ public class DbBackedIngestionServiceIT extends AbstractIntegrationTest{
 
         EventIngestRequest e = baseEvent("E-2");
 
-        EventBatchRequest req = new EventBatchRequest();
-        req.setEvents(List.of(e));
+        ingestionService.ingest(new EventBatchRequest(List.of(e)));
 
-        ingestionService.ingest(req);
-        EventBatchResponse second = ingestionService.ingest(req);
+        EventBatchResponse second =
+                ingestionService.ingest(new EventBatchRequest(List.of(e)));
 
-        assertThat(second.getDeduped()).isEqualTo(1);
         assertThat(second.getAccepted()).isZero();
+        assertThat(second.getUpdated()).isZero();
+        assertThat(second.getDeduped()).isEqualTo(1);
 
-        List<EventEntity> events =
-                eventRepository.findAllByEventIdIn(List.of("E-2"));
-
-        assertThat(events).hasSize(1);
+        assertThat(eventRepository.count()).isEqualTo(1);
     }
 
     @Test
     void newerPayloadShouldUpdateExisting() {
 
-        EventIngestRequest e1 = baseEvent("E-3");
-
-        ingestionService.ingest(new EventBatchRequest(List.of(e1)));
-
-        EventIngestRequest e2 = baseEvent("E-3");
-        e2.setDefectCount(5);
+        ingestionService.ingest(
+                new EventBatchRequest(List.of(baseEvent("E-3")))
+        );
 
         FixedClockTestConfig.advanceSeconds(10);
+
+        EventIngestRequest updated = baseEvent("E-3");
+        updated.setDefectCount(5);
+
         EventBatchResponse res =
-                ingestionService.ingest(new EventBatchRequest(List.of(e2)));
+                ingestionService.ingest(new EventBatchRequest(List.of(updated)));
 
         assertThat(res.getUpdated()).isEqualTo(1);
+        assertThat(res.getAccepted()).isZero();
+        assertThat(res.getDeduped()).isZero();
 
         EventEntity stored =
                 eventRepository.findAllByEventIdIn(List.of("E-3")).getFirst();
 
         assertThat(stored.getDefectCount()).isEqualTo(5);
     }
+
     @Test
     void invalidDurationShouldBeRejected() {
 
         EventIngestRequest e = baseEvent("E-4");
         e.setDurationMs(7 * 60 * 60 * 1000L);
 
-        EventBatchRequest req = new EventBatchRequest();
-        req.setEvents(List.of(e));
-
-        EventBatchResponse res = ingestionService.ingest(req);
+        EventBatchResponse res =
+                ingestionService.ingest(new EventBatchRequest(List.of(e)));
 
         assertThat(res.getRejected()).isEqualTo(1);
         assertThat(eventRepository.count()).isZero();
     }
+
     @Test
     void futureEventTimeShouldBeRejected() {
+        System.out.println(ingestionService.getClass());
 
         EventIngestRequest e = baseEvent("E-5");
-        e.setEventTime(Instant.parse("2026-01-15T10:30:00Z"));
+        e.setEventTime(Instant.parse("2036-01-15T10:30:00Z"));
 
-        EventBatchRequest req = new EventBatchRequest();
-        req.setEvents(List.of(e));
-
-        EventBatchResponse res = ingestionService.ingest(req);
-
+        EventBatchResponse res =
+                ingestionService.ingest(new EventBatchRequest(List.of(e)));
+        System.out.println(FixedClockTestConfig.NOW);
         assertThat(res.getRejected()).isEqualTo(1);
         assertThat(eventRepository.count()).isZero();
     }
+
     @Test
     void concurrentIngestionShouldNotCorruptState() throws Exception {
 
@@ -134,14 +138,13 @@ public class DbBackedIngestionServiceIT extends AbstractIntegrationTest{
         EventIngestRequest e2 = baseEvent("E-6");
         e2.setDefectCount(2);
 
-        Runnable r1 = () -> ingestionService.ingest(
-                new EventBatchRequest(List.of(e1)));
+        Thread t1 = new Thread(() ->
+                ingestionService.ingest(new EventBatchRequest(List.of(e1)))
+        );
 
-        Runnable r2 = () -> ingestionService.ingest(
-                new EventBatchRequest(List.of(e2)));
-
-        Thread t1 = new Thread(r1);
-        Thread t2 = new Thread(r2);
+        Thread t2 = new Thread(() ->
+                ingestionService.ingest(new EventBatchRequest(List.of(e2)))
+        );
 
         t1.start();
         t2.start();
@@ -149,16 +152,10 @@ public class DbBackedIngestionServiceIT extends AbstractIntegrationTest{
         t1.join();
         t2.join();
 
-        EventEntity stored =
-                eventRepository.findAllByEventIdIn(List.of("E-6")).getFirst();
+        List<EventEntity> stored =
+                eventRepository.findAllByEventIdIn(List.of("E-6"));
 
-        assertThat(stored.getDefectCount()).isIn(1, 2);
-        assertThat(eventRepository.count()).isEqualTo(1);
+        assertThat(stored).hasSize(1);
+        assertThat(stored.getFirst().getDefectCount()).isIn(1, 2);
     }
-
-    @BeforeEach
-    void clean(){
-        eventRepository.deleteAll();
-    }
-
 }

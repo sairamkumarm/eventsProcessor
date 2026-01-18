@@ -6,6 +6,7 @@ import dev.factory.events.repository.EventRepository;
 import dev.factory.events.service.model.NormalizedEvent;
 import dev.factory.events.util.ClockProvider;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -13,7 +14,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
+
+@Service("JPAIngestion")
 public class DbBackedIngestionService implements EventIngestionService {
 
     private static final Duration MAX_DURATION = Duration.ofHours(6);
@@ -22,7 +24,7 @@ public class DbBackedIngestionService implements EventIngestionService {
     private final EventRepository eventRepository;
     private final ClockProvider clock;
 
-    public DbBackedIngestionService(EventRepository eventRepository, ClockProvider clock) {
+    public DbBackedIngestionService(EventRepository eventRepository, @Qualifier("runningClock") ClockProvider clock) {
         this.eventRepository = eventRepository;
         this.clock = clock;
     }

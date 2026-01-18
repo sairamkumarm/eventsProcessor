@@ -1,10 +1,11 @@
 package dev.factory.events.api.dto;
 
+import lombok.Data;
 import lombok.Value;
 
 import java.time.Instant;
 
-@Value
+@Data
 public class MachineStatsResponse {
 
     String machineId;
@@ -16,4 +17,5 @@ public class MachineStatsResponse {
     double avgDefectRate;
 
     String status;
+
 }
