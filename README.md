@@ -72,6 +72,8 @@ docker-compose up --build
 OpenAPI spec available at:
 `http://localhost:8080/v3/api-docs`
 
+Sample jsons of size 1000 and 5000 are included
+
 ---
 
 ## Endpoints
@@ -198,17 +200,18 @@ OpenAPI spec available at:
       "lineId": "L-01",
       "totalDefects": 15,
       "eventCount": 500,
-      "defectsPercent": 3.0
+      "defectsPercent": 30
     },
     {
       "lineId": "L-02",
       "totalDefects": 20,
       "eventCount": 400,
-      "defectsPercent": 5.0
+      "defectsPercent": 5
     }
   ]
 }
 ```
+(NOTE: actual formula for defectsPercent scales the totalDefects to 100, as needed)
 
 **Objects:**
 
@@ -270,7 +273,7 @@ Atomic upserts via `ON CONFLICT` for deduplication / updates.
 ---
 
 ## Edge Cases & Assumptions
-
+* Defect count is not limited to -1, 0 or 1, one event can bring multiple defects with it.
 * `durationMs` outside 0–6 hours → rejected
 * `eventTime > 15 min in future` → rejected
 * Start inclusive, end exclusive for stats queries

@@ -32,7 +32,7 @@ public class MachineStatsService {
         long hours = Duration.between(startTime,endTime).toHours();
         double avgDefectRate =
                 events == 0 ? 0.0 : (double) defects / hours;
-
+        avgDefectRate = Math.round(avgDefectRate * 100)/100.00;
         MachineStatsResponse res = new MachineStatsResponse();
         res.setMachineId(machineId);
         res.setStart(startTime);
