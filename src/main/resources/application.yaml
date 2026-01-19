@@ -5,9 +5,6 @@ spring:
     url: jdbc:postgresql://localhost:5432/events
     username: events_user
     password: events_pass
-    hikari:
-      data-source-properties:
-        options: "-c TimeZone=UTC"
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:

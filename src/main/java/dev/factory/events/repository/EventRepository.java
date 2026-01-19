@@ -78,7 +78,7 @@ public interface EventRepository extends JpaRepository<EventEntity,Long> {
     @Query(value = """
     SELECT
         e.line_id as lineId,
-        COALESCE(SUM(e.defect_count), 0) as totalDefects,
+        COALESCE(SUM(CASE WHEN e.defect_count >= 0 THEN e.defect_count ELSE 0 END), 0) as totalDefects,
         COUNT(*) as eventCount
     FROM events e
     WHERE e.factory_id = :factoryId

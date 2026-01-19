@@ -10,6 +10,10 @@ public class EventIngestRequest {
 
     @NotBlank
     @Size(max = 64)
+    @Pattern(
+            regexp = "^E-\\d+$",
+            message = "EventId must be in format E-<digits>"
+    )
     private String eventId;
 
     @NotNull
@@ -24,10 +28,18 @@ public class EventIngestRequest {
 
     @NotBlank
     @Size(max = 64)
+    @Pattern(
+            regexp = "^F-\\d+$",
+            message = "FactoryId must be in format F-<digits>"
+    )
     private String factoryId;
 
     @NotBlank
     @Size(max = 64)
+    @Pattern(
+            regexp = "^L-\\d+$",
+            message = "LineId must be in format L-<digits>"
+    )
     private String lineId;
 
     @Min(0)

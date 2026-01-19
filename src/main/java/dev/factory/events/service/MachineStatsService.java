@@ -40,7 +40,7 @@ public class MachineStatsService {
         res.setEventsCount(events);
         res.setDefectsCount(defects);
         res.setAvgDefectRate(avgDefectRate);
-        res.setStatus(avgDefectRate >= 2 ? "WARNING" : "OK");
+        res.setStatus(avgDefectRate >= 2 ? "WARNING" : "HEALTHY");
 
         return res;
     }

@@ -1,0 +1,367 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/events/batch": {
+      "post": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "batchIngestEvents",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/stats": {
+      "get": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "getMachineStats",
+        "parameters": [
+          {
+            "name": "machineId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/stats/top-defect-lines": {
+      "get": {
+        "tags": [
+          "event-controller"
+        ],
+        "operationId": "getTopDefectLines",
+        "parameters": [
+          {
+            "name": "factoryId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopDefectLinesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EventBatchRequest": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventIngestRequest"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "events"
+        ]
+      },
+      "EventIngestRequest": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 0,
+            "pattern": "^E-\\d+$"
+          },
+          "eventTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receivedTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "machineId": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 0
+          },
+          "factoryId": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 0,
+            "pattern": "^F-\\d+$"
+          },
+          "lineId": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 0,
+            "pattern": "^L-\\d+$"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "defectCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": -1
+          }
+        },
+        "required": [
+          "eventId",
+          "eventTime",
+          "factoryId",
+          "lineId",
+          "machineId",
+          "receivedTime"
+        ]
+      },
+      "EventBatchResponse": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deduped": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventRejection"
+            }
+          }
+        }
+      },
+      "EventRejection": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "INVALID_DURATION",
+              "EVENT_TIME_TOO_FAR_IN_FUTURE",
+              "MALFORMED_REQUEST"
+            ]
+          }
+        }
+      },
+      "MachineStatsResponse": {
+        "type": "object",
+        "properties": {
+          "machineId": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "eventsCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "defectsCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "avgDefectRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "DefectLineResponse": {
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "totalDefects": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "eventCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "defectsPercent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "TopDefectLinesResponse": {
+        "type": "object",
+        "properties": {
+          "defectLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DefectLineResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

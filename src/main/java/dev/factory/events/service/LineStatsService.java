@@ -1,9 +1,9 @@
 package dev.factory.events.service;
 
-import dev.factory.events.api.dto.TopDefectLineResponse;
+import dev.factory.events.api.dto.DefectLineResponse;
+import dev.factory.events.api.dto.TopDefectLinesResponse;
 import dev.factory.events.repository.EventRepository;
 import dev.factory.events.repository.TopDefectLineProjection;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,7 +19,7 @@ public class LineStatsService {
         this.eventRepository = eventRepository;
     }
 
-    public List<TopDefectLineResponse> getTopDefectLines(
+    public TopDefectLinesResponse getTopDefectLines(
             String factoryId,
             Instant from,
             Instant to,
@@ -28,12 +28,14 @@ public class LineStatsService {
         List<TopDefectLineProjection> raw =
                 eventRepository.findTopDefectLinesNative(factoryId, from, to, limit);
 
-        return raw.stream()
+        TopDefectLinesResponse res = new TopDefectLinesResponse();
+        res.setDefectLines(raw.stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        return res;
     }
 
-    private TopDefectLineResponse toResponse(TopDefectLineProjection p) {
+    private DefectLineResponse toResponse(TopDefectLineProjection p) {
         long eventCount = p.getEventCount();
         long totalDefects = p.getTotalDefects();
 
@@ -46,7 +48,7 @@ public class LineStatsService {
             );
         }
 
-        TopDefectLineResponse r = new TopDefectLineResponse();
+        DefectLineResponse r = new DefectLineResponse();
         r.setLineId(p.getLineId());
         r.setTotalDefects(totalDefects);
         r.setEventCount(eventCount);

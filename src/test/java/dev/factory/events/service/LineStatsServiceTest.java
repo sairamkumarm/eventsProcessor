@@ -1,6 +1,7 @@
 package dev.factory.events.service;
 
-import dev.factory.events.api.dto.TopDefectLineResponse;
+import dev.factory.events.api.dto.DefectLineResponse;
+import dev.factory.events.api.dto.TopDefectLinesResponse;
 import dev.factory.events.repository.EventRepository;
 import dev.factory.events.repository.TopDefectLineProjection;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,18 +41,17 @@ class LineStatsServiceTest {
         when(eventRepository.findTopDefectLinesNative("F01", from, to, 10))
                 .thenReturn(List.of(p1, p2));
 
-        List<TopDefectLineResponse> result =
-                service.getTopDefectLines("F01", from, to, 10);
+        TopDefectLinesResponse result = service.getTopDefectLines("F01", from, to, 10);
 
-        assertEquals(2, result.size());
+        assertEquals(2, result.getDefectLines().size());
 
-        TopDefectLineResponse r1 = result.get(0);
+        DefectLineResponse r1 = result.getDefectLines().get(0);
         assertEquals("L1", r1.getLineId());
         assertEquals(50, r1.getTotalDefects());
         assertEquals(200, r1.getEventCount());
         assertEquals(25.0, r1.getDefectsPercent());
 
-        TopDefectLineResponse r2 = result.get(1);
+        DefectLineResponse r2 = result.getDefectLines().get(1);
         assertEquals("L2", r2.getLineId());
         assertEquals(20, r2.getTotalDefects());
         assertEquals(100, r2.getEventCount());
@@ -71,12 +71,12 @@ class LineStatsServiceTest {
         when(eventRepository.findTopDefectLinesNative("F01", from, to, 5))
                 .thenReturn(List.of(p));
 
-        List<TopDefectLineResponse> result =
+        TopDefectLinesResponse result =
                 service.getTopDefectLines("F01", from, to, 5);
 
-        assertEquals(1, result.size());
+        assertEquals(1, result.getDefectLines().size());
 
-        TopDefectLineResponse r = result.get(0);
+        DefectLineResponse r = result.getDefectLines().get(0);
         assertEquals("L0", r.getLineId());
         assertEquals(0, r.getTotalDefects());
         assertEquals(0, r.getEventCount());
@@ -94,10 +94,10 @@ class LineStatsServiceTest {
         when(eventRepository.findTopDefectLinesNative("F01", from, to, 1))
                 .thenReturn(List.of(p));
 
-        List<TopDefectLineResponse> result =
+        TopDefectLinesResponse result =
                 service.getTopDefectLines("F01", from, to, 1);
 
-        assertEquals(33.33, result.get(0).getDefectsPercent());
+        assertEquals(33.33, result.getDefectLines().get(0).getDefectsPercent());
     }
 
     private TopDefectLineProjection projection(
